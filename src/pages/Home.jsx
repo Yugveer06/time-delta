@@ -10,7 +10,7 @@ import TimeOffsetControls from "../components/TimeOffsetControls";
 
 import { getTimeZones } from "@vvo/tzdb";
 import useLocalStorage from "../hooks/useLocalStorage";
-import data from "../countries+states+cities.json";
+// import data from "../countries+states+cities.json"; // Removed static import
 
 import Geonames from "geonames.js";
 
@@ -52,14 +52,39 @@ const Home = () => {
 	});
 
 	const debounceTimeout = useRef();
+	const citiesData = useRef(null);
 
-	function handleSearchInput(searchQuery) {
+	// Preload data when popover opens
+	useEffect(() => {
+		if (popOverOpened && !citiesData.current) {
+			import("../countries+states+cities.json").then(module => {
+				citiesData.current = module.default;
+			});
+		}
+	}, [popOverOpened]);
+
+	async function handleSearchInput(searchQuery) {
 		setSearchTerm(searchQuery);
 
 		clearTimeout(debounceTimeout.current);
 		if (searchQuery !== "") {
+			// Ensure data is loaded
+			if (!citiesData.current) {
+				try {
+					const module = await import(
+						"../countries+states+cities.json"
+					);
+					citiesData.current = module.default;
+				} catch (error) {
+					console.error("Failed to load cities data", error);
+					return;
+				}
+			}
+
 			debounceTimeout.current = setTimeout(() => {
-				setSearchResults(searchLocation(data, searchQuery));
+				setSearchResults(
+					searchLocation(citiesData.current, searchQuery)
+				);
 			}, 500);
 		} else {
 			setSearchResults([]);
