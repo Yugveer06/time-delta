@@ -89,14 +89,12 @@ const AddedTimeZoneItem = ({
 						>
 							<div>
 								<span className='label'>
-									Current Time and Date:{" "}
+									{isCustomTime
+										? "Custom Time and Date: "
+										: "Current Time and Date: "}
 								</span>
 								<span className='time'>
-									{convertTimeZone(
-										date,
-										currentTimeZone,
-										timeZoneName
-									)
+									{date
 										.toLocaleTimeString([], {
 											hour: "2-digit",
 											minute: "2-digit",
@@ -110,11 +108,7 @@ const AddedTimeZoneItem = ({
 								</span>
 								<span className='date'>
 									{", " +
-										convertTimeZone(
-											date,
-											currentTimeZone,
-											addedTimeZone.timezone
-										).toLocaleDateString([], {
+										date.toLocaleDateString([], {
 											weekday: "long",
 											year: "numeric",
 											month: "long",

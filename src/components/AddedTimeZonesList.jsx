@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, Reorder } from "framer-motion";
+import moment from "moment-timezone";
 import SystemClockDisplay from "./SystemClockDisplay";
 import AddedTimeZoneItem from "./AddedTimeZoneItem";
 import LoadingSpinner from "./LoadingSpinner";
@@ -16,9 +17,32 @@ const AddedTimeZonesList = ({
 	spinnerText,
 }) => {
 	const [date, setDate] = useState(new Date());
-	// Global time override: { date: Date, sourceTimezone: string } or null for realtime
-	// This represents "what if it's this date/time in sourceTimezone"
+	// Global time override: Date object representing the absolute custom time, or null for real-time
 	const [globalTimeOverride, setGlobalTimeOverride] = useState(null);
+
+	// Load saved custom time on mount
+	useEffect(() => {
+		const savedTime = localStorage.getItem("globalTimeOverride");
+		if (savedTime) {
+			const parsedDate = new Date(savedTime);
+			if (!isNaN(parsedDate.getTime())) {
+				setGlobalTimeOverride(parsedDate);
+				setDate(parsedDate);
+			}
+		}
+	}, []);
+
+	// Save custom time to localStorage
+	useEffect(() => {
+		if (globalTimeOverride) {
+			localStorage.setItem(
+				"globalTimeOverride",
+				globalTimeOverride.toISOString()
+			);
+		} else {
+			localStorage.removeItem("globalTimeOverride");
+		}
+	}, [globalTimeOverride]);
 
 	useEffect(() => {
 		var timerID = setInterval(() => tick(), 1000);
@@ -48,27 +72,20 @@ const AddedTimeZonesList = ({
 		return toTime;
 	}
 
+	// Helper to get a Date object that represents the time in targetTimezone
+	// but in the local browser's timezone context (for display purposes)
+	function getShiftedDate(absoluteDate, targetTimezone) {
+		return new Date(
+			absoluteDate.toLocaleString("en-US", { timeZone: targetTimezone })
+		);
+	}
+
 	function offsetTime(date, hours = 0, minutes = 0, seconds = 0) {
 		let result = new Date(date.getTime());
 		result.setHours(result.getHours() + hours * offsetTimeBy.sign);
 		result.setMinutes(result.getMinutes() + minutes * offsetTimeBy.sign);
 		result.setSeconds(result.getSeconds() + seconds * offsetTimeBy.sign);
 		return result;
-	}
-
-	// Function to get the display date for a specific timezone
-	function getDisplayDateForTimezone(targetTimezone) {
-		if (!globalTimeOverride) {
-			// Real-time: convert current real time from system timezone  to target timezone
-			return convertTimeZone(date, currentTimeZone, targetTimezone);
-		} else {
-			// Custom time: convert from source timezone to target timezone
-			return convertTimeZone(
-				globalTimeOverride.date,
-				globalTimeOverride.sourceTimezone,
-				targetTimezone
-			);
-		}
 	}
 
 	const handleRemoveTimeZone = addedTimeZone => {
@@ -89,12 +106,26 @@ const AddedTimeZonesList = ({
 			setGlobalTimeOverride(null);
 			setDate(new Date());
 		} else {
-			// Set global time override with source timezone
-			setGlobalTimeOverride({
-				date: newDate,
-				sourceTimezone: sourceTimezone,
-			});
-			setDate(newDate);
+			// newDate is the "face value" time set by the user.
+			// We need to interpret this face value as being in the sourceTimezone
+			// and convert it to an absolute timestamp.
+
+			// Format the date components to a string that moment can parse
+			// We use local getters because newDate is a local Date object constructed from inputs
+			const year = newDate.getFullYear();
+			const month = String(newDate.getMonth() + 1).padStart(2, "0");
+			const day = String(newDate.getDate()).padStart(2, "0");
+			const hours = String(newDate.getHours()).padStart(2, "0");
+			const minutes = String(newDate.getMinutes()).padStart(2, "0");
+			const seconds = String(newDate.getSeconds()).padStart(2, "0");
+
+			const timeString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+			// Create absolute date from the source timezone
+			const absoluteDate = moment.tz(timeString, sourceTimezone).toDate();
+
+			setGlobalTimeOverride(absoluteDate);
+			setDate(absoluteDate);
 		}
 	};
 
@@ -102,7 +133,11 @@ const AddedTimeZonesList = ({
 		<div className='addedTimeZones'>
 			<SystemClockDisplay
 				currentTimeZone={currentTimeZone}
-				date={globalTimeOverride ? globalTimeOverride.date : date}
+				date={
+					globalTimeOverride
+						? getShiftedDate(globalTimeOverride, currentTimeZone)
+						: date
+				}
 				hourFormat={hourFormat}
 				offsetTimeBy={offsetTimeBy}
 				offsetTime={offsetTime}
@@ -130,14 +165,17 @@ const AddedTimeZonesList = ({
 									addedTimeZone.states[0].cities &&
 									addedTimeZone.states[0].cities[0].timezone);
 
-							// Get the display date for this timezone considering global override
+							// Get the display date for this timezone
 							const displayDate = globalTimeOverride
-								? convertTimeZone(
-										globalTimeOverride.date,
-										globalTimeOverride.sourceTimezone,
+								? getShiftedDate(
+										globalTimeOverride,
 										timeZoneName
 								  )
-								: date;
+								: convertTimeZone(
+										date,
+										currentTimeZone,
+										timeZoneName
+								  );
 
 							return (
 								<AddedTimeZoneItem

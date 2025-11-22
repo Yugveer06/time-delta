@@ -34,7 +34,9 @@ const SystemClockDisplay = ({
 						>
 							<div>
 								<span className='label'>
-									Current Time and Date:{" "}
+									{isCustomTime
+										? "Custom Time and Date: "
+										: "Current Time and Date: "}
 								</span>
 								<span className='time'>
 									{date
