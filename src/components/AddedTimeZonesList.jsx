@@ -2,6 +2,7 @@ import { AnimatePresence, Reorder } from "framer-motion";
 import AddedTimeZoneItem from "./AddedTimeZoneItem";
 import LoadingSpinner from "./LoadingSpinner";
 import SystemClockDisplay from "./SystemClockDisplay";
+import moment from "moment-timezone";
 
 const AddedTimeZonesList = ({
 	userSettings,
@@ -18,21 +19,32 @@ const AddedTimeZonesList = ({
 	handleGlobalTimeChange,
 }) => {
 	function convertTimeZone(date, fromTimeZone, toTimeZone) {
-		// Create a Date object for the given date and time in the fromTimeZone
-		var fromTime = new Date(
-			date.toLocaleString("en-US", { timeZone: fromTimeZone })
-		);
+		// If source and target are the same, just return the date
+		if (fromTimeZone === toTimeZone) {
+			return date;
+		}
 
-		// Convert the date to the toTimeZone
-		var toTime = new Date(
-			fromTime.toLocaleString("en-US", { timeZone: toTimeZone })
-		);
+		// Use moment-timezone for accurate timezone conversion
+		// Get the absolute time as a moment object in the source timezone
+		const sourceMoment = moment.tz(date, fromTimeZone);
 
-		return toTime;
+		// Convert to target timezone and extract the local time components
+		const targetMoment = sourceMoment.clone().tz(toTimeZone);
+
+		// Create a new Date object with the target timezone's local time
+		return new Date(
+			targetMoment.year(),
+			targetMoment.month(),
+			targetMoment.date(),
+			targetMoment.hours(),
+			targetMoment.minutes(),
+			targetMoment.seconds(),
+			targetMoment.milliseconds()
+		);
 	}
 
 	// Helper to get a Date object that represents the time in targetTimezone
-	// but in the local browser's timezone context (for display purposes)
+	// but in the  local browser's timezone context (for display purposes)
 	function getShiftedDate(absoluteDate, targetTimezone) {
 		return new Date(
 			absoluteDate.toLocaleString("en-US", { timeZone: targetTimezone })

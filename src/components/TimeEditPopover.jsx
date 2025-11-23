@@ -37,10 +37,17 @@ const TimeEditPopover = ({
 	const handleApply = () => {
 		if (tempDate && tempTime) {
 			const [hours, minutes, seconds = "00"] = tempTime.split(":");
-			const newDate = new Date(tempDate);
-			newDate.setHours(parseInt(hours, 10));
-			newDate.setMinutes(parseInt(minutes, 10));
-			newDate.setSeconds(parseInt(seconds, 10));
+
+			// Create a timezone-aware date string
+			const dateTimeString = `${tempDate} ${hours}:${minutes}:${seconds}`;
+
+			// Parse the date in the source timezone to get the correct absolute timestamp
+			// This is already handled correctly in Home.jsx's handleGlobalTimeChange
+			// We just need to pass the components to that function
+			const newDate = new Date(
+				`${tempDate}T${hours}:${minutes}:${seconds}`
+			);
+
 			onDateChange(newDate, sourceTimezone);
 			setIsOpen(false);
 		}

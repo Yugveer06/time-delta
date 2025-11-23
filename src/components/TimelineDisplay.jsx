@@ -56,12 +56,20 @@ const TimelineDisplay = ({
 			<m.div
 				className='circle'
 				animate={{
-					width:
-						((timeToDisplay / 1000 -
-							timeToDisplay.setHours(0, 0, 0, 0) / 1000) /
-							(24 * 60 * 60)) *
-							100 +
-						"%",
+					width: (() => {
+						// Get the timestamp for the current time
+						const currentTime = timeToDisplay.getTime();
+						// Create a new Date object set to the start of the day (midnight)
+						const startOfDay = new Date(timeToDisplay);
+						startOfDay.setHours(0, 0, 0, 0);
+						const startOfDayTime = startOfDay.getTime();
+						// Calculate seconds elapsed since midnight
+						const elapsedSeconds =
+							(currentTime - startOfDayTime) / 1000;
+						// Calculate percentage of the day (24 * 60 * 60 = 86400 seconds in a day)
+						const percentage = (elapsedSeconds / 86400) * 100;
+						return percentage + "%";
+					})(),
 				}}
 			></m.div>
 		</div>
