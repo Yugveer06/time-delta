@@ -14,6 +14,7 @@ import useLocalStorage from "../hooks/useLocalStorage";
 
 import Geonames from "geonames.js";
 import moment from "moment-timezone";
+import TimeDifference from "../components/TimeDifference";
 
 const Home = () => {
 	const currentTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -124,10 +125,8 @@ const Home = () => {
 	});
 
 	function tick() {
-		// Only update date if we're not using a custom time override
-		if (!globalTimeOverride) {
-			setDate(new Date());
-		}
+		// Always update date to current real time
+		setDate(new Date());
 	}
 
 	const handleGlobalTimeChange = (newDate, sourceTimezone) => {
@@ -157,6 +156,52 @@ const Home = () => {
 			setGlobalTimeOverride(absoluteDate);
 			setDate(absoluteDate);
 		}
+	};
+
+	// Helper function to format the time difference between custom time and real time
+	const getTimeDifferenceParts = () => {
+		if (!globalTimeOverride) return null;
+
+		const diffMs = globalTimeOverride.getTime() - date.getTime();
+		const absDiffMs = Math.abs(diffMs);
+
+		const units = [
+			{
+				label: "day",
+				value: Math.floor(absDiffMs / (1000 * 60 * 60 * 24)),
+			},
+			{
+				label: "hour",
+				value: Math.floor(absDiffMs / (1000 * 60 * 60)) % 24,
+			},
+			{
+				label: "minute",
+				value: Math.floor(absDiffMs / (1000 * 60)) % 60,
+			},
+			{ label: "second", value: Math.floor(absDiffMs / 1000) % 60 },
+		];
+
+		const timeParts = units
+			.filter(u => u.value > 0)
+			.map(u => ({
+				text: `${u.value} ${u.label}${u.value !== 1 ? "s" : ""}`,
+				value: u.value,
+				unit: u.label,
+			}));
+
+		if (timeParts.length === 0) {
+			return {
+				status: "now",
+				direction: null,
+				parts: [],
+			};
+		}
+
+		return {
+			status: "diff",
+			direction: diffMs > 0 ? "ahead" : "behind",
+			parts: timeParts,
+		};
 	};
 
 	const [popOverOpened, setPopOverOpened] = useState(false);
@@ -440,12 +485,17 @@ const Home = () => {
 						handleResultClick={handleResultClick}
 					/>
 				</m.div>
-				<TimeOffsetControls
-					userSettings={userSettings}
-					setUserSettings={setUserSettings}
-					offsetTimeBy={offsetTimeBy}
-					setOffsetTimeBy={setOffsetTimeBy}
-				/>
+				<div className='bottomPart'>
+					<TimeDifference
+						getTimeDifferenceParts={getTimeDifferenceParts}
+					/>
+					<TimeOffsetControls
+						userSettings={userSettings}
+						setUserSettings={setUserSettings}
+						offsetTimeBy={offsetTimeBy}
+						setOffsetTimeBy={setOffsetTimeBy}
+					/>
+				</div>
 			</main>
 		</div>
 	);

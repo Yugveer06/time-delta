@@ -305,55 +305,79 @@
 			}
 		}
 
-		.offsetTime {
-			position: relative;
+		.bottomPart {
 			display: flex;
-			justify-content: space-between;
-			min-height: 32px;
+			flex-direction: column;
 			gap: 8px;
 
-			.left {
-				line-height: 1.8;
-				.offsetTimeInputGroup {
-					display: inline-flex;
-					margin-left: 8px;
-					gap: 8px;
+			.timeNow {
+				color: var(--purplishBlue);
+			}
+			.timeDiff {
+				.timePart {
+					font-weight: bold;
+				}
+				.direction.ahead {
+					color: #22c55e;
+					border-radius: 4px;
+				}
 
-					.offsetTimeInput {
-						max-width: 128px;
-						height: 24px;
+				.direction.behind {
+					color: #ef4444;
+					border-radius: 4px;
+				}
+			}
+
+			.offsetTime {
+				position: relative;
+				display: flex;
+				justify-content: space-between;
+				min-height: 32px;
+				gap: 8px;
+
+				.left {
+					line-height: 1.8;
+					.offsetTimeInputGroup {
+						display: inline-flex;
+						margin-left: 8px;
+						gap: 8px;
+
+						.offsetTimeInput {
+							max-width: 128px;
+							height: 24px;
+							border-radius: 4px;
+							text-align: center;
+							background: var(--lightGray);
+
+							&:hover,
+							&:focus {
+								background-color: var(--lightBlue);
+							}
+						}
+					}
+				}
+				.right {
+					@include app.centered-flex-row;
+
+					.resetOffsetButton {
+						@include app.centered-flex-row;
 						border-radius: 4px;
-						text-align: center;
+						cursor: pointer;
+						width: 32px;
+						height: 100%;
+						color: var(--lighterBlack);
 						background: var(--lightGray);
 
 						&:hover,
 						&:focus {
+							color: var(--marineBlue);
 							background-color: var(--lightBlue);
 						}
-					}
-				}
-			}
-			.right {
-				@include app.centered-flex-row;
 
-				.resetOffsetButton {
-					@include app.centered-flex-row;
-					border-radius: 4px;
-					cursor: pointer;
-					width: 32px;
-					height: 100%;
-					color: var(--lighterBlack);
-					background: var(--lightGray);
-
-					&:hover,
-					&:focus {
-						color: var(--marineBlue);
-						background-color: var(--lightBlue);
-					}
-
-					&:focus {
-						box-shadow: 0 0 0 2px white inset,
-							0 0 0 2px var(--purplishBlue);
+						&:focus {
+							box-shadow: 0 0 0 2px white inset,
+								0 0 0 2px var(--purplishBlue);
+						}
 					}
 				}
 			}
