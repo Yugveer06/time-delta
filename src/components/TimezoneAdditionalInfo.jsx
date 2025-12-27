@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from "react";
-import * as Popover from "@radix-ui/react-popover";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+	faInfoCircle,
+	faLocationArrow,
+	faMapMarkerAlt,
 	faMoneyBill,
 	faPhone,
-	faMapMarkerAlt,
-	faTemperatureHigh,
 	faSpinner,
-	faInfoCircle,
-	faXmark,
+	faTemperatureHigh,
+	faXmark
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import * as Popover from "@radix-ui/react-popover";
+import { useEffect, useState } from "react";
 import "../styles/TimezoneAdditionalInfo.scss";
 
 // Simple in-memory cache with timestamps
@@ -20,6 +21,7 @@ const MIN_API_INTERVAL = 2000; // 2 seconds between API calls (rate limiting)
 
 const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 	const [temperature, setTemperature] = useState(null);
+	const [windData, setWindData] = useState(null);
 	const [weatherLoading, setWeatherLoading] = useState(false);
 	const [weatherError, setWeatherError] = useState(false);
 	const [open, setOpen] = useState(false);
@@ -74,7 +76,7 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 			// Rate limiting: wait if necessary
 			if (timeSinceLastCall < MIN_API_INTERVAL) {
 				const waitTime = MIN_API_INTERVAL - timeSinceLastCall;
-				await new Promise(resolve => setTimeout(resolve, waitTime));
+				await new Promise((resolve) => setTimeout(resolve, waitTime));
 			}
 
 			setWeatherLoading(true);
@@ -101,14 +103,19 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 
 				const data = await response.json();
 				const temp = Math.round(data.main.temp);
+				const windSpeed = data.wind.speed;
+				const windDirection = data.wind.deg;
 
 				// Update cache
 				weatherCache.set(cacheKey, {
 					temp,
-					timestamp: Date.now(),
+					windSpeed,
+					windDirection,
+					timestamp: Date.now()
 				});
 
 				setTemperature(temp);
+				setWindData({ windSpeed, windDirection });
 				setWeatherError(false);
 			} catch (error) {
 				console.error("Error fetching weather:", error);
@@ -221,10 +228,47 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 											{weatherLoading
 												? "Loading..."
 												: weatherError
-												? "N/A"
-												: temperature !== null
-												? `${temperature}°C`
-												: "N/A"}
+													? "N/A"
+													: temperature !== null
+														? `${temperature}°C`
+														: "N/A"}
+										</span>
+									</div>
+								</div>
+							)}
+
+							{/* Wind */}
+							{latitude && longitude && (
+								<div className='info-item'>
+									<div className='info-icon'>
+										<FontAwesomeIcon
+											icon={
+												weatherLoading
+													? faSpinner
+													: faLocationArrow
+											}
+											spin={weatherLoading}
+											style={{
+												rotate:
+													!weatherLoading &&
+													!weatherError &&
+													windData &&
+													windData.windDirection
+														? `${windData.windDirection - 45}deg`
+														: "-45deg"
+											}}
+										/>
+									</div>
+									<div className='info-content'>
+										<span className='info-label'>Wind</span>
+										<span className='info-value'>
+											{weatherLoading
+												? "Loading..."
+												: weatherError
+													? "N/A"
+													: windData !== null
+														? `${windData.windSpeed}m/s (${windData.windDirection}°)`
+														: "N/A"}
 										</span>
 									</div>
 								</div>
