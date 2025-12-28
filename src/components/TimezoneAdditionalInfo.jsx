@@ -1,4 +1,5 @@
 import {
+	faEarth,
 	faInfoCircle,
 	faLocationArrow,
 	faMapMarkerAlt,
@@ -48,6 +49,7 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 	}
 
 	// Get currency info (with both code and name)
+	const continent = countryData.region;
 	const currencyCode = countryData.currency;
 	const currencyName = countryData.currency_name;
 	const currencySymbol = countryData.currency_symbol;
@@ -57,6 +59,7 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 
 	// Fetch weather data with rate limiting - only when popover is open
 	useEffect(() => {
+		console.log(countryData);
 		if (!latitude || !longitude || !open) return;
 
 		const cacheKey = `${latitude},${longitude}`;
@@ -148,6 +151,23 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 					</div>
 					<div className='InfoPopoverBody'>
 						<div className='info-grid'>
+							{/* Continent Info */}
+							{currencyName && (
+								<div className='info-item'>
+									<div className='info-icon'>
+										<FontAwesomeIcon icon={faEarth} />
+									</div>
+									<div className='info-content'>
+										<span className='info-label'>
+											Continent
+										</span>
+										<span className='info-value'>
+											{continent && `${continent}`}
+										</span>
+									</div>
+								</div>
+							)}
+
 							{/* Currency Info */}
 							{currencyName && (
 								<div className='info-item'>

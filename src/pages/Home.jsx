@@ -15,6 +15,7 @@ import useLocalStorage from "../hooks/useLocalStorage";
 import Geonames from "geonames.js";
 import moment from "moment-timezone";
 import TimeDifference from "../components/TimeDifference";
+import { getVersion } from "../lib/version";
 
 const Home = () => {
 	const currentTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -24,10 +25,11 @@ const Home = () => {
 	const [userSettings, setUserSettings] = useLocalStorage(
 		"timeCalculatorSettings",
 		{
+			version: getVersion(),
 			theme: "light",
 			addedTimeZones: [],
 			hourFormat: 12,
-			offsetTimeBy: { hours: 0, minutes: 0, seconds: 0, sign: 1 },
+			offsetTimeBy: { hours: 0, minutes: 0, seconds: 0, sign: 1 }
 		}
 	);
 	const [hourFormat, setHourFormat] = useState(userSettings.hourFormat);
@@ -47,6 +49,14 @@ const Home = () => {
 
 	// Load system timezone data based on currentTimeZone
 	useEffect(() => {
+		if (
+			!userSettings ||
+			!userSettings.version ||
+			!userSettings.version === getVersion()
+		) {
+			console.log("Version mismatch or not found");
+			localStorage.clear();
+		}
 		const loadSystemTimezoneData = async () => {
 			try {
 				const module = await import("../countries+states+cities.json");
@@ -68,11 +78,12 @@ const Home = () => {
 									name: country.name,
 									latitude: country.latitude,
 									longitude: country.longitude,
+									region: country.region,
 									currency: country.currency,
 									currency_name: country.currency_name,
 									currency_symbol: country.currency_symbol,
 									phone_code: country.phone_code,
-									timezone: targetTimezone,
+									timezone: targetTimezone
 								});
 								return;
 							}
@@ -168,39 +179,39 @@ const Home = () => {
 		const units = [
 			{
 				label: "day",
-				value: Math.floor(absDiffMs / (1000 * 60 * 60 * 24)),
+				value: Math.floor(absDiffMs / (1000 * 60 * 60 * 24))
 			},
 			{
 				label: "hour",
-				value: Math.floor(absDiffMs / (1000 * 60 * 60)) % 24,
+				value: Math.floor(absDiffMs / (1000 * 60 * 60)) % 24
 			},
 			{
 				label: "minute",
-				value: Math.floor(absDiffMs / (1000 * 60)) % 60,
+				value: Math.floor(absDiffMs / (1000 * 60)) % 60
 			},
-			{ label: "second", value: Math.floor(absDiffMs / 1000) % 60 },
+			{ label: "second", value: Math.floor(absDiffMs / 1000) % 60 }
 		];
 
 		const timeParts = units
-			.filter(u => u.value > 0)
-			.map(u => ({
+			.filter((u) => u.value > 0)
+			.map((u) => ({
 				text: `${u.value} ${u.label}${u.value !== 1 ? "s" : ""}`,
 				value: u.value,
-				unit: u.label,
+				unit: u.label
 			}));
 
 		if (timeParts.length === 0) {
 			return {
 				status: "now",
 				direction: null,
-				parts: [],
+				parts: []
 			};
 		}
 
 		return {
 			status: "diff",
 			direction: diffMs > 0 ? "ahead" : "behind",
-			parts: timeParts,
+			parts: timeParts
 		};
 	};
 
@@ -210,7 +221,7 @@ const Home = () => {
 	const geonames = Geonames({
 		username: GEONAMES_USERNAME,
 		lan: "en",
-		encoding: "JSON",
+		encoding: "JSON"
 	});
 
 	const debounceTimeout = useRef();
@@ -219,7 +230,7 @@ const Home = () => {
 	// Preload data when popover opens
 	useEffect(() => {
 		if (popOverOpened && !citiesData.current) {
-			import("../countries+states+cities.json").then(module => {
+			import("../countries+states+cities.json").then((module) => {
 				citiesData.current = module.default;
 			});
 		}
@@ -233,9 +244,8 @@ const Home = () => {
 			// Ensure data is loaded
 			if (!citiesData.current) {
 				try {
-					const module = await import(
-						"../countries+states+cities.json"
-					);
+					const module =
+						await import("../countries+states+cities.json");
 					citiesData.current = module.default;
 				} catch (error) {
 					console.error("Failed to load cities data", error);
@@ -263,32 +273,35 @@ const Home = () => {
 		let exactMatches = [];
 		let partialMatches = [];
 		let lowerCaseQuery = query.toLowerCase();
-		data.forEach(country => {
+		data.forEach((country) => {
 			if (country.name.toLowerCase() === lowerCaseQuery) {
 				exactMatches.push({
 					name: country.name,
 					latitude: country.latitude,
 					longitude: country.longitude,
+					region: country.region,
 					currency: country.currency,
 					currency_name: country.currency_name,
 					currency_symbol: country.currency_symbol,
-					phone_code: country.phone_code,
+					phone_code: country.phone_code
 				});
 			} else if (country.name.toLowerCase().includes(lowerCaseQuery)) {
 				partialMatches.push({
 					name: country.name,
 					latitude: country.latitude,
 					longitude: country.longitude,
+					region: country.region,
 					currency: country.currency,
 					currency_name: country.currency_name,
 					currency_symbol: country.currency_symbol,
-					phone_code: country.phone_code,
+					phone_code: country.phone_code
 				});
 			} else {
-				country.states.forEach(state => {
+				country.states.forEach((state) => {
 					if (state.name.toLowerCase() === lowerCaseQuery) {
 						exactMatches.push({
 							name: country.name,
+							region: country.region,
 							currency: country.currency,
 							currency_name: country.currency_name,
 							currency_symbol: country.currency_symbol,
@@ -297,15 +310,16 @@ const Home = () => {
 								{
 									name: state.name,
 									latitude: state.latitude,
-									longitude: state.longitude,
-								},
-							],
+									longitude: state.longitude
+								}
+							]
 						});
 					} else if (
 						state.name.toLowerCase().includes(lowerCaseQuery)
 					) {
 						partialMatches.push({
 							name: country.name,
+							region: country.region,
 							currency: country.currency,
 							currency_name: country.currency_name,
 							currency_symbol: country.currency_symbol,
@@ -314,15 +328,16 @@ const Home = () => {
 								{
 									name: state.name,
 									latitude: state.latitude,
-									longitude: state.longitude,
-								},
-							],
+									longitude: state.longitude
+								}
+							]
 						});
 					} else {
-						state.cities.forEach(city => {
+						state.cities.forEach((city) => {
 							if (city.name.toLowerCase() === lowerCaseQuery) {
 								exactMatches.push({
 									name: country.name,
+									region: country.region,
 									currency: country.currency,
 									currency_name: country.currency_name,
 									currency_symbol: country.currency_symbol,
@@ -334,17 +349,18 @@ const Home = () => {
 												{
 													name: city.name,
 													latitude: city.latitude,
-													longitude: city.longitude,
-												},
-											],
-										},
-									],
+													longitude: city.longitude
+												}
+											]
+										}
+									]
 								});
 							} else if (
 								city.name.toLowerCase().includes(lowerCaseQuery)
 							) {
 								partialMatches.push({
 									name: country.name,
+									region: country.region,
 									currency: country.currency,
 									currency_name: country.currency_name,
 									currency_symbol: country.currency_symbol,
@@ -356,11 +372,11 @@ const Home = () => {
 												{
 													name: city.name,
 													latitude: city.latitude,
-													longitude: city.longitude,
-												},
-											],
-										},
-									],
+													longitude: city.longitude
+												}
+											]
+										}
+									]
 								});
 							}
 						});
@@ -377,7 +393,7 @@ const Home = () => {
 	async function handleResultClick(result) {
 		// Fetch the timezone for the clicked result if it doesnt already exist
 		if (
-			!addedTimeZones.some(addedTimeZone => {
+			!addedTimeZones.some((addedTimeZone) => {
 				const {
 					["timezone"]: removedAddedTimeZone,
 					...restAddedTimeZone
@@ -417,7 +433,7 @@ const Home = () => {
 					setSpinnerText("Getting Timezone");
 					const data = await geonames.timezone({
 						lat: latitude,
-						lng: longitude,
+						lng: longitude
 					});
 					result.timezone = data.timezoneId;
 				} catch (libraryError) {
@@ -439,10 +455,10 @@ const Home = () => {
 				setIsFetchingTimeZone(false);
 			}
 
-			setAddedTimeZones(prev => [...prev, result]);
+			setAddedTimeZones((prev) => [...prev, result]);
 			setUserSettings({
 				...userSettings,
-				addedTimeZones: [...addedTimeZones, result],
+				addedTimeZones: [...addedTimeZones, result]
 			});
 		}
 
