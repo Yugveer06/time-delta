@@ -56,6 +56,7 @@ const Home = () => {
 		) {
 			console.log("Version mismatch or not found");
 			localStorage.clear();
+			window.location.reload();
 		}
 		const loadSystemTimezoneData = async () => {
 			try {
