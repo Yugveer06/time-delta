@@ -12,14 +12,12 @@ import { getTimeZones } from "@vvo/tzdb";
 import useLocalStorage from "../hooks/useLocalStorage";
 // import data from "../countries+states+cities.json"; // Removed static import
 
-import Geonames from "geonames.js";
 import moment from "moment-timezone";
 import TimeDifference from "../components/TimeDifference";
 import { getVersion } from "../lib/version";
 
 const Home = () => {
 	const currentTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-	const GEONAMES_USERNAME = import.meta.env.VITE_GEONAMES_USERNAME;
 
 	const [spinnerText, setSpinnerText] = useState("library");
 	const [userSettings, setUserSettings] = useLocalStorage(
@@ -219,12 +217,6 @@ const Home = () => {
 	const [popOverOpened, setPopOverOpened] = useState(false);
 	const [isFetchingTimeZone, setIsFetchingTimeZone] = useState(false);
 
-	const geonames = Geonames({
-		username: GEONAMES_USERNAME,
-		lan: "en",
-		encoding: "JSON"
-	});
-
 	const debounceTimeout = useRef();
 	const citiesData = useRef(null);
 
@@ -245,8 +237,9 @@ const Home = () => {
 			// Ensure data is loaded
 			if (!citiesData.current) {
 				try {
-					const module =
-						await import("../countries+states+cities.json");
+					const module = await import(
+						"../countries+states+cities.json"
+					);
 					citiesData.current = module.default;
 				} catch (error) {
 					console.error("Failed to load cities data", error);
@@ -430,27 +423,23 @@ const Home = () => {
 			// If the timezone is not already added, add it
 			if (latitude && longitude) {
 				try {
-					console.log("fetching from library");
+					console.log("fetching timezone from serverless function");
 					setSpinnerText("Getting Timezone");
-					const data = await geonames.timezone({
-						lat: latitude,
-						lng: longitude
-					});
-					result.timezone = data.timezoneId;
-				} catch (libraryError) {
-					try {
-						console.log("fetching from API");
-						setSpinnerText("Trying to get the timezone...");
-						const api = `http://api.geonames.org/timezoneJSON?username=${GEONAMES_USERNAME}&lang=en&lat=${latitude}&lng=${longitude}`;
+					const response = await fetch(
+						`/api/timezone?lat=${latitude}&lng=${longitude}`
+					);
 
-						const response = await fetch(api);
-						const data = await response.json();
-
-						result.timezone = data.timezoneId;
-					} catch (apiError) {
-						setSpinnerText("Error");
-						return;
+					if (!response.ok) {
+						throw new Error(`API error: ${response.status}`);
 					}
+
+					const data = await response.json();
+					result.timezone = data.timezoneId;
+				} catch (error) {
+					console.error("Error fetching timezone:", error);
+					setSpinnerText("Error");
+					setIsFetchingTimeZone(false);
+					return;
 				}
 
 				setIsFetchingTimeZone(false);

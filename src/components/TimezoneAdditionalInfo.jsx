@@ -86,18 +86,10 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 			setWeatherError(false);
 
 			try {
-				const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
-				if (!apiKey) {
-					console.warn("OpenWeather API key not found");
-					setWeatherError(true);
-					setWeatherLoading(false);
-					return;
-				}
-
 				lastApiCall = Date.now();
 
 				const response = await fetch(
-					`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`
+					`/api/weather?lat=${latitude}&lon=${longitude}`
 				);
 
 				if (!response.ok) {
@@ -248,10 +240,10 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 											{weatherLoading
 												? "Loading..."
 												: weatherError
-													? "N/A"
-													: temperature !== null
-														? `${temperature}°C`
-														: "N/A"}
+												? "N/A"
+												: temperature !== null
+												? `${temperature}°C`
+												: "N/A"}
 										</span>
 									</div>
 								</div>
@@ -274,7 +266,10 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 													!weatherError &&
 													windData &&
 													windData.windDirection
-														? `${windData.windDirection - 45}deg`
+														? `${
+																windData.windDirection -
+																45
+														  }deg`
 														: "-45deg"
 											}}
 										/>
@@ -285,10 +280,10 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 											{weatherLoading
 												? "Loading..."
 												: weatherError
-													? "N/A"
-													: windData !== null
-														? `${windData.windSpeed}m/s (${windData.windDirection}°)`
-														: "N/A"}
+												? "N/A"
+												: windData !== null
+												? `${windData.windSpeed}m/s (${windData.windDirection}°)`
+												: "N/A"}
 										</span>
 									</div>
 								</div>

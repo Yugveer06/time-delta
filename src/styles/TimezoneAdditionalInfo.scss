@@ -1,5 +1,5 @@
-@import "./App.scss";
-@import "./colors.scss";
+@use "./App.scss" as *;
+@use "./colors.scss" as *;
 
 // Compact info button (trigger)
 .infoButton {
