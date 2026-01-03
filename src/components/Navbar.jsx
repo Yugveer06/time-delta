@@ -5,7 +5,7 @@ import {
 	faClose,
 	faGear,
 	faMoon,
-	faSun,
+	faSun
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
@@ -17,12 +17,12 @@ const Navbar = ({
 	setHourFormat,
 	userSettings,
 	setUserSettings,
-	isCustomTime,
+	isCustomTime
 }) => {
 	const [settingsPopOverOpened, setSettingsPopOverOpened] = useState(false);
 	const [theme, setTheme] = useState("light");
 
-	const handleTheme = e => {
+	const handleTheme = (e) => {
 		setTheme(e);
 		setUserSettings({ ...userSettings, theme: e });
 	};
@@ -38,7 +38,7 @@ const Navbar = ({
 						height={36}
 					/>
 				</div>
-				<h1>Time Calculator</h1>
+				<h1>Time Delta</h1>
 			</div>
 			<div className='right'>
 				<Popover.Root
@@ -75,12 +75,12 @@ const Navbar = ({
 													? "selected"
 													: null
 											}
-											onClick={event => {
+											onClick={(event) => {
 												event.target.blur();
 												setHourFormat(12);
 												setUserSettings({
 													...userSettings,
-													hourFormat: 12,
+													hourFormat: 12
 												});
 											}}
 										>
@@ -92,12 +92,12 @@ const Navbar = ({
 													? "selected"
 													: null
 											}
-											onClick={event => {
+											onClick={(event) => {
 												event.target.blur();
 												setHourFormat(24);
 												setUserSettings({
 													...userSettings,
-													hourFormat: 24,
+													hourFormat: 24
 												});
 											}}
 										>
@@ -115,7 +115,7 @@ const Navbar = ({
 													? "selected"
 													: null
 											}
-											onClick={event => {
+											onClick={(event) => {
 												event.target.blur();
 												handleTheme("light");
 											}}
@@ -128,7 +128,7 @@ const Navbar = ({
 													? "selected"
 													: null
 											}
-											onClick={event => {
+											onClick={(event) => {
 												event.target.blur();
 												handleTheme("dark");
 											}}
