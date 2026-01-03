@@ -1,0 +1,2 @@
+# Redirect all Netlify traffic to Vercel
+/*    https://timedelta.vercel.app/:splat    301!
