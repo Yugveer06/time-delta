@@ -1,4 +1,4 @@
-# Time Calculator
+# Time Delta
 
 Old project, not maintained.
 
