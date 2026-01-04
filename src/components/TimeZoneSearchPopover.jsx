@@ -12,7 +12,7 @@ const TimeZoneSearchPopover = ({
 	setSearchTerm,
 	handleSearchInput,
 	searchResults,
-	handleResultClick,
+	handleResultClick
 }) => {
 	return (
 		<Popover.Root onOpenChange={setPopOverOpened} open={popOverOpened}>
@@ -35,7 +35,7 @@ const TimeZoneSearchPopover = ({
 									type='text'
 									className='timeZoneSearchBar'
 									value={searchTerm}
-									onChange={event =>
+									onChange={(event) =>
 										handleSearchInput(event.target.value)
 									}
 									placeholder='Search...'
@@ -55,8 +55,11 @@ const TimeZoneSearchPopover = ({
 								)}
 							</div>
 							<div className='resultsFound'>
-								{searchTerm !== "" &&
-									searchResults.length + " results found..."}
+								{searchTerm !== "" && searchTerm.length < 2
+									? "Type at least 2 characters..."
+									: searchTerm !== "" &&
+									  searchResults.length +
+											" results found..."}
 							</div>
 						</div>
 					</div>

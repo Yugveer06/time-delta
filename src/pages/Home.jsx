@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import "../styles/Home.scss";
 
 import { motion as m } from "framer-motion";
@@ -8,9 +8,8 @@ import Navbar from "../components/Navbar";
 import TimeOffsetControls from "../components/TimeOffsetControls";
 import TimeZoneSearchPopover from "../components/TimeZoneSearchPopover";
 
-import { getTimeZones } from "@vvo/tzdb";
 import useLocalStorage from "../hooks/useLocalStorage";
-// import data from "../countries+states+cities.json"; // Removed static import
+import { useSearchWorker } from "../hooks/useSearchWorker";
 
 import moment from "moment-timezone";
 import TimeDifference from "../components/TimeDifference";
@@ -36,9 +35,10 @@ const Home = () => {
 	);
 	const [offsetTimeBy, setOffsetTimeBy] = useState(userSettings.offsetTimeBy);
 
-	const timeZones = getTimeZones();
 	const [searchTerm, setSearchTerm] = useState("");
-	const [searchResults, setSearchResults] = useState([]);
+
+	// Use web worker for fast search
+	const { search, results: searchResults, clearResults } = useSearchWorker();
 
 	// State moved from AddedTimeZonesList
 	const [date, setDate] = useState(new Date());
@@ -217,171 +217,9 @@ const Home = () => {
 	const [popOverOpened, setPopOverOpened] = useState(false);
 	const [isFetchingTimeZone, setIsFetchingTimeZone] = useState(false);
 
-	const debounceTimeout = useRef();
-	const citiesData = useRef(null);
-
-	// Preload data when popover opens
-	useEffect(() => {
-		if (popOverOpened && !citiesData.current) {
-			import("../countries+states+cities.json").then((module) => {
-				citiesData.current = module.default;
-			});
-		}
-	}, [popOverOpened]);
-
-	async function handleSearchInput(searchQuery) {
+	function handleSearchInput(searchQuery) {
 		setSearchTerm(searchQuery);
-
-		clearTimeout(debounceTimeout.current);
-		if (searchQuery !== "") {
-			// Ensure data is loaded
-			if (!citiesData.current) {
-				try {
-					const module = await import(
-						"../countries+states+cities.json"
-					);
-					citiesData.current = module.default;
-				} catch (error) {
-					console.error("Failed to load cities data", error);
-					return;
-				}
-			}
-
-			debounceTimeout.current = setTimeout(() => {
-				setSearchResults(
-					searchLocation(citiesData.current, searchQuery)
-				);
-			}, 500);
-		} else {
-			setSearchResults([]);
-		}
-	}
-
-	const cache = useRef({});
-
-	function searchLocation(data, query) {
-		if (cache.current[query]) {
-			return cache.current[query];
-		}
-
-		let exactMatches = [];
-		let partialMatches = [];
-		let lowerCaseQuery = query.toLowerCase();
-		data.forEach((country) => {
-			if (country.name.toLowerCase() === lowerCaseQuery) {
-				exactMatches.push({
-					name: country.name,
-					latitude: country.latitude,
-					longitude: country.longitude,
-					region: country.region,
-					currency: country.currency,
-					currency_name: country.currency_name,
-					currency_symbol: country.currency_symbol,
-					phone_code: country.phone_code
-				});
-			} else if (country.name.toLowerCase().includes(lowerCaseQuery)) {
-				partialMatches.push({
-					name: country.name,
-					latitude: country.latitude,
-					longitude: country.longitude,
-					region: country.region,
-					currency: country.currency,
-					currency_name: country.currency_name,
-					currency_symbol: country.currency_symbol,
-					phone_code: country.phone_code
-				});
-			} else {
-				country.states.forEach((state) => {
-					if (state.name.toLowerCase() === lowerCaseQuery) {
-						exactMatches.push({
-							name: country.name,
-							region: country.region,
-							currency: country.currency,
-							currency_name: country.currency_name,
-							currency_symbol: country.currency_symbol,
-							phone_code: country.phone_code,
-							states: [
-								{
-									name: state.name,
-									latitude: state.latitude,
-									longitude: state.longitude
-								}
-							]
-						});
-					} else if (
-						state.name.toLowerCase().includes(lowerCaseQuery)
-					) {
-						partialMatches.push({
-							name: country.name,
-							region: country.region,
-							currency: country.currency,
-							currency_name: country.currency_name,
-							currency_symbol: country.currency_symbol,
-							phone_code: country.phone_code,
-							states: [
-								{
-									name: state.name,
-									latitude: state.latitude,
-									longitude: state.longitude
-								}
-							]
-						});
-					} else {
-						state.cities.forEach((city) => {
-							if (city.name.toLowerCase() === lowerCaseQuery) {
-								exactMatches.push({
-									name: country.name,
-									region: country.region,
-									currency: country.currency,
-									currency_name: country.currency_name,
-									currency_symbol: country.currency_symbol,
-									phone_code: country.phone_code,
-									states: [
-										{
-											name: state.name,
-											cities: [
-												{
-													name: city.name,
-													latitude: city.latitude,
-													longitude: city.longitude
-												}
-											]
-										}
-									]
-								});
-							} else if (
-								city.name.toLowerCase().includes(lowerCaseQuery)
-							) {
-								partialMatches.push({
-									name: country.name,
-									region: country.region,
-									currency: country.currency,
-									currency_name: country.currency_name,
-									currency_symbol: country.currency_symbol,
-									phone_code: country.phone_code,
-									states: [
-										{
-											name: state.name,
-											cities: [
-												{
-													name: city.name,
-													latitude: city.latitude,
-													longitude: city.longitude
-												}
-											]
-										}
-									]
-								});
-							}
-						});
-					}
-				});
-			}
-		});
-
-		const results = [...exactMatches, ...partialMatches];
-		cache.current[query] = results;
-		return results;
+		search(searchQuery);
 	}
 
 	async function handleResultClick(result) {
@@ -452,7 +290,7 @@ const Home = () => {
 			});
 		}
 
-		setSearchResults([]);
+		clearResults();
 	}
 
 	return (
