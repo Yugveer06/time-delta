@@ -1,5 +1,6 @@
 import {
 	faEarth,
+	faGlobe,
 	faInfoCircle,
 	faLocationArrow,
 	faMapMarkerAlt,
@@ -56,6 +57,7 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 
 	// Get phone code
 	const phoneCode = countryData.phone_code;
+	const countryCode = countryData.country_code;
 
 	// Fetch weather data with rate limiting - only when popover is open
 	useEffect(() => {
@@ -178,6 +180,26 @@ const TimezoneAdditionalInfo = ({ addedTimeZone }) => {
 									</div>
 								</div>
 							)}
+
+							{/* Country Code */}
+							{countryCode &&
+								(countryCode.iso2 || countryCode.iso3) && (
+									<div className='info-item'>
+										<div className='info-icon'>
+											<FontAwesomeIcon icon={faGlobe} />
+										</div>
+										<div className='info-content'>
+											<span className='info-label'>
+												Country Code
+											</span>
+											<span className='info-value'>
+												{countryCode.iso2}
+												<div className='seperator' />
+												{countryCode.iso3}
+											</span>
+										</div>
+									</div>
+								)}
 
 							{/* Phone Code */}
 							{phoneCode && (

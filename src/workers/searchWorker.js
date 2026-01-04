@@ -19,7 +19,11 @@ function buildSearchIndex(data) {
 			currency: country.currency,
 			currency_name: country.currency_name,
 			currency_symbol: country.currency_symbol,
-			phone_code: country.phone_code
+			phone_code: country.phone_code,
+			country_code: {
+				iso2: country.iso2,
+				iso3: country.iso3
+			}
 		});
 
 		if (country.states) {
@@ -37,7 +41,11 @@ function buildSearchIndex(data) {
 					currency: country.currency,
 					currency_name: country.currency_name,
 					currency_symbol: country.currency_symbol,
-					phone_code: country.phone_code
+					phone_code: country.phone_code,
+					country_code: {
+						iso2: country.iso2,
+						iso3: country.iso3
+					}
 				});
 
 				if (state.cities) {
@@ -58,7 +66,11 @@ function buildSearchIndex(data) {
 							currency: country.currency,
 							currency_name: country.currency_name,
 							currency_symbol: country.currency_symbol,
-							phone_code: country.phone_code
+							phone_code: country.phone_code,
+							country_code: {
+								iso2: country.iso2,
+								iso3: country.iso3
+							}
 						});
 					}
 				}
@@ -233,7 +245,11 @@ function formatResult(item) {
 			currency: item.currency,
 			currency_name: item.currency_name,
 			currency_symbol: item.currency_symbol,
-			phone_code: item.phone_code
+			phone_code: item.phone_code,
+			country_code: {
+				iso2: item.country_code.iso2,
+				iso3: item.country_code.iso3
+			}
 		};
 	} else if (item.type === "state") {
 		return {
@@ -243,6 +259,10 @@ function formatResult(item) {
 			currency_name: item.currency_name,
 			currency_symbol: item.currency_symbol,
 			phone_code: item.phone_code,
+			country_code: {
+				iso2: item.country_code.iso2,
+				iso3: item.country_code.iso3
+			},
 			states: [
 				{
 					name: item.name,
@@ -259,6 +279,10 @@ function formatResult(item) {
 			currency_name: item.currency_name,
 			currency_symbol: item.currency_symbol,
 			phone_code: item.phone_code,
+			country_code: {
+				iso2: item.country_code.iso2,
+				iso3: item.country_code.iso3
+			},
 			states: [
 				{
 					name: item.stateName,

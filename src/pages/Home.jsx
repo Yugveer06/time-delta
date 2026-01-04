@@ -82,6 +82,10 @@ const Home = () => {
 									currency_name: country.currency_name,
 									currency_symbol: country.currency_symbol,
 									phone_code: country.phone_code,
+									country_code: {
+										iso2: country.iso2,
+										iso3: country.iso3
+									},
 									timezone: targetTimezone
 								});
 								return;

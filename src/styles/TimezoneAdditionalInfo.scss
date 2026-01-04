@@ -147,12 +147,25 @@
 					}
 
 					.info-value {
+						display: flex;
+						align-items: center;
+						justify-content: baseline;
+						gap: 8px;
+						position: relative;
+						height: 16px;
 						font-size: 0.8em;
 						font-weight: 500;
 						color: var(--marineBlue);
 						overflow: hidden;
 						text-overflow: ellipsis;
 						white-space: nowrap;
+
+						.seperator {
+							width: 2px;
+							height: 100%;
+							background: var(--purplishBlue);
+							user-select: none;
+						}
 					}
 				}
 			}
