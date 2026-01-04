@@ -1,0 +1,14 @@
+[build]
+  command = "pnpm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[dev]
+  command = "pnpm run dev:vite"
+  targetPort = 3000
+
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 200
+  force = true
