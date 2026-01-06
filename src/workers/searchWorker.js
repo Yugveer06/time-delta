@@ -2,6 +2,97 @@
 let searchIndex = null;
 let isIndexReady = false;
 
+// Available search filters
+const AVAILABLE_FILTERS = {
+	iso2: "Search by ISO2 country code (e.g., iso2:US)",
+	iso3: "Search by ISO3 country code (e.g., iso3:USA)",
+	region: 'Search by region (e.g., region:Asia, region:"North America")',
+	currency: "Search by currency code (e.g., currency:USD)",
+	phone: "Search by phone code (e.g., phone:1)",
+	type: "Filter by location type (e.g., type:city, type:country, type:state)",
+	in: 'Find locations within a parent (e.g., hyderabad in:india, california in:"united states")'
+};
+
+// Parse search query for filters
+function parseQuery(query) {
+	const filters = {};
+	let searchText = query;
+
+	// Extract filters in format "key:value" or "key:"quoted value""
+	// This regex handles both quoted and unquoted values
+	const filterRegex = /(\w+):(?:"([^"]+)"|([^\s]+))/g;
+	let match;
+
+	while ((match = filterRegex.exec(query)) !== null) {
+		const [fullMatch, key, quotedValue, unquotedValue] = match;
+		const value = quotedValue || unquotedValue; // Use quoted value if present, otherwise unquoted
+		filters[key.toLowerCase()] = value.toLowerCase();
+		searchText = searchText.replace(fullMatch, "").trim();
+	}
+
+	// Handle special case: "region:asia india" -> region filter + search text
+	if (filters.region && searchText) {
+		// Keep both the region filter and the remaining search text
+	}
+
+	return { filters, searchText: searchText.trim() };
+}
+
+// Check if item matches filters
+function matchesFilters(item, filters) {
+	for (const [key, value] of Object.entries(filters)) {
+		switch (key) {
+			case "iso2":
+				if (item.country_code?.iso2?.toLowerCase() !== value)
+					return false;
+				break;
+			case "iso3":
+				if (item.country_code?.iso3?.toLowerCase() !== value)
+					return false;
+				break;
+			case "region":
+				if (item.region?.toLowerCase() !== value) return false;
+				break;
+			case "currency":
+				if (item.currency?.toLowerCase() !== value) return false;
+				break;
+			case "phone":
+				if (item.phone_code !== value) return false;
+				break;
+			case "type":
+				if (item.type !== value) return false;
+				break;
+			case "in":
+				// Check if the item is within the specified parent location
+				const parentName = value.toLowerCase();
+				let isWithinParent = false;
+
+				// For cities: check if in specified state or country
+				if (item.type === "city") {
+					isWithinParent =
+						item.stateName?.toLowerCase() === parentName ||
+						item.countryName?.toLowerCase() === parentName;
+				}
+				// For states: check if in specified country
+				else if (item.type === "state") {
+					isWithinParent =
+						item.countryName?.toLowerCase() === parentName;
+				}
+				// Countries can't be "in" anything else
+				else if (item.type === "country") {
+					isWithinParent = false;
+				}
+
+				if (!isWithinParent) return false;
+				break;
+			default:
+				// Unknown filter, ignore
+				break;
+		}
+	}
+	return true;
+}
+
 // Build a flat search index with pre-computed search tokens
 function buildSearchIndex(data) {
 	const index = [];
@@ -160,54 +251,100 @@ function fuzzySequenceMatch(query, target) {
 	return { matched, score };
 }
 
-// Multi-keyword search with scoring
+// Multi-keyword search with scoring and filtering
 function search(query, maxResults = 100) {
 	if (!isIndexReady || !query) return [];
 
-	const trimmedQuery = query.trim().toLowerCase();
+	const trimmedQuery = query.trim();
 	if (trimmedQuery.length < 2) return [];
 
-	// Split query into keywords
-	const keywords = trimmedQuery.split(/\s+/).filter((k) => k.length > 0);
+	// Parse query for filters and search text
+	const { filters, searchText } = parseQuery(trimmedQuery);
 
+	// If no search text and no filters, return empty
+	if (!searchText && Object.keys(filters).length === 0) return [];
+
+	const keywords = searchText
+		? searchText
+				.toLowerCase()
+				.split(/\s+/)
+				.filter((k) => k.length > 0)
+		: [];
+
+	const exactMatches = [];
 	const scored = [];
-	const minScoreThreshold = 50; // Filter out weak matches
+	const minScoreThreshold = 30; // Lowered threshold for better results
 
 	for (const item of searchIndex) {
+		// Apply filters first
+		if (!matchesFilters(item, filters)) continue;
+
+		// If no search text but filters match, include with high score
+		if (keywords.length === 0) {
+			scored.push({
+				item,
+				score: 1000 // High score for filter-only matches
+			});
+			continue;
+		}
+
 		let totalScore = 0;
 		let matchedKeywords = 0;
+		let hasExactMatch = false;
 
-		for (const keyword of keywords) {
-			// Score against primary name
-			const nameScore = fuzzyScore(keyword, item.searchName);
+		// Check for exact matches first
+		const fullSearchText = searchText.toLowerCase();
+		if (item.searchName === fullSearchText) {
+			hasExactMatch = true;
+			totalScore = 10000; // Highest priority for exact matches
+			matchedKeywords = keywords.length;
+		} else {
+			// Score each keyword
+			for (const keyword of keywords) {
+				// Score against primary name
+				const nameScore = fuzzyScore(keyword, item.searchName);
 
-			// Score against parent (country/state) for context matching
-			let parentScore = 0;
-			if (item.parentTokens) {
-				for (const token of item.parentTokens) {
-					parentScore = Math.max(
-						parentScore,
-						fuzzyScore(keyword, token) * 0.5
-					);
+				// Score against parent (country/state) for context matching
+				let parentScore = 0;
+				if (item.parentTokens) {
+					for (const token of item.parentTokens) {
+						parentScore = Math.max(
+							parentScore,
+							fuzzyScore(keyword, token) * 0.5
+						);
+					}
 				}
-			}
 
-			const keywordScore = Math.max(nameScore, parentScore);
+				const keywordScore = Math.max(nameScore, parentScore);
 
-			if (keywordScore > 0) {
-				matchedKeywords++;
-				totalScore += keywordScore;
+				if (keywordScore > 0) {
+					matchedKeywords++;
+					totalScore += keywordScore;
+				}
 			}
 		}
 
-		// All keywords must match something
+		// All keywords must match something (or exact match)
 		if (
-			matchedKeywords === keywords.length &&
-			totalScore >= minScoreThreshold
+			hasExactMatch ||
+			(matchedKeywords === keywords.length &&
+				totalScore >= minScoreThreshold)
 		) {
-			// Type weighting: prefer cities > states > countries for specificity
-			const typeBonus =
-				item.type === "city" ? 20 : item.type === "state" ? 10 : 0;
+			// Priority scoring: Country > State > City for exact matches
+			// This ensures "Oman" (country) appears before "Oman" (city)
+			let typeBonus = 0;
+			if (hasExactMatch) {
+				typeBonus =
+					item.type === "country"
+						? 1000
+						: item.type === "state"
+						? 500
+						: 100;
+			} else {
+				// For non-exact matches, prefer more specific locations
+				typeBonus =
+					item.type === "city" ? 20 : item.type === "state" ? 10 : 0;
+			}
 
 			// Bonus for matching all keywords in the primary name
 			const allInName = keywords.every((k) =>
@@ -215,23 +352,32 @@ function search(query, maxResults = 100) {
 			);
 			const nameBonus = allInName ? 50 : 0;
 
-			scored.push({
-				item,
-				score: totalScore + typeBonus + nameBonus
-			});
+			const finalScore = totalScore + typeBonus + nameBonus;
+
+			if (hasExactMatch) {
+				exactMatches.push({ item, score: finalScore });
+			} else {
+				scored.push({ item, score: finalScore });
+			}
 		}
 
 		// Early termination: if we have lots of high-quality matches, stop
-		if (scored.length >= maxResults * 3) {
+		if (exactMatches.length + scored.length >= maxResults * 3) {
 			break;
 		}
 	}
 
-	// Sort by score descending
+	// Sort exact matches by type priority (country > state > city)
+	exactMatches.sort((a, b) => b.score - a.score);
+
+	// Sort other matches by score
 	scored.sort((a, b) => b.score - a.score);
 
+	// Combine results: exact matches first, then others
+	const allResults = [...exactMatches, ...scored];
+
 	// Return top results
-	return scored.slice(0, maxResults).map((s) => formatResult(s.item));
+	return allResults.slice(0, maxResults).map((s) => formatResult(s.item));
 }
 
 // Format result back to the expected structure
@@ -316,6 +462,11 @@ self.onmessage = function (e) {
 		self.postMessage({
 			type: "RESULTS",
 			payload: { query: payload.query, results }
+		});
+	} else if (type === "GET_FILTERS") {
+		self.postMessage({
+			type: "FILTERS",
+			payload: AVAILABLE_FILTERS
 		});
 	}
 };

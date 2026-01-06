@@ -134,6 +134,39 @@ input {
 			.resultsFound {
 				color: var(--lighterBlack);
 			}
+
+			.filtersHelp {
+				margin-top: 4px;
+				padding: 8px;
+				background: var(--lightGray);
+				border-radius: 4px;
+				font-size: 12px;
+
+				.filtersTitle {
+					font-weight: 600;
+					color: var(--marineBlue);
+					margin-bottom: 4px;
+				}
+
+				.filtersList {
+					display: flex;
+					flex-direction: column;
+					gap: 2px;
+
+					.filterItem {
+						color: var(--lighterBlack);
+
+						code {
+							background: var(--white);
+							padding: 1px 4px;
+							border-radius: 2px;
+							font-family: "Courier New", monospace;
+							font-size: 11px;
+							color: var(--marineBlue);
+						}
+					}
+				}
+			}
 		}
 	}
 

@@ -12,7 +12,8 @@ const TimeZoneSearchPopover = ({
 	setSearchTerm,
 	handleSearchInput,
 	searchResults,
-	handleResultClick
+	handleResultClick,
+	availableFilters = {}
 }) => {
 	return (
 		<Popover.Root onOpenChange={setPopOverOpened} open={popOverOpened}>
@@ -38,7 +39,7 @@ const TimeZoneSearchPopover = ({
 									onChange={(event) =>
 										handleSearchInput(event.target.value)
 									}
-									placeholder='Search...'
+									placeholder='Search locations or use filters (e.g., iso2:US, california in:"united states")...'
 								/>
 								{searchTerm !== "" && (
 									<m.button
@@ -54,6 +55,26 @@ const TimeZoneSearchPopover = ({
 									</m.button>
 								)}
 							</div>
+							{Object.keys(availableFilters).length > 0 && (
+								<div className='filtersHelp'>
+									<div className='filtersTitle'>
+										Available Filters:
+									</div>
+									<div className='filtersList'>
+										{Object.entries(availableFilters).map(
+											([key, description]) => (
+												<div
+													key={key}
+													className='filterItem'
+												>
+													<code>{key}:</code>{" "}
+													{description}
+												</div>
+											)
+										)}
+									</div>
+								</div>
+							)}
 							<div className='resultsFound'>
 								{searchTerm !== "" && searchTerm.length < 2
 									? "Type at least 2 characters..."

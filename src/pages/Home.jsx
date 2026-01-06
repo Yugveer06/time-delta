@@ -38,7 +38,12 @@ const Home = () => {
 	const [searchTerm, setSearchTerm] = useState("");
 
 	// Use web worker for fast search
-	const { search, results: searchResults, clearResults } = useSearchWorker();
+	const {
+		search,
+		results: searchResults,
+		clearResults,
+		availableFilters
+	} = useSearchWorker();
 
 	// State moved from AddedTimeZonesList
 	const [date, setDate] = useState(new Date());
@@ -331,6 +336,7 @@ const Home = () => {
 						handleSearchInput={handleSearchInput}
 						searchResults={searchResults}
 						handleResultClick={handleResultClick}
+						availableFilters={availableFilters}
 					/>
 				</m.div>
 				<div className='bottomPart'>

@@ -5,6 +5,7 @@ export function useSearchWorker() {
 	const [isReady, setIsReady] = useState(false);
 	const [results, setResults] = useState([]);
 	const [isSearching, setIsSearching] = useState(false);
+	const [availableFilters, setAvailableFilters] = useState({});
 	const pendingQueryRef = useRef(null);
 	const debounceRef = useRef(null);
 
@@ -21,12 +22,16 @@ export function useSearchWorker() {
 
 			if (type === "READY") {
 				setIsReady(true);
+				// Request available filters once ready
+				workerRef.current.postMessage({ type: "GET_FILTERS" });
 			} else if (type === "RESULTS") {
 				// Only update if this is the latest query
 				if (payload.query === pendingQueryRef.current) {
 					setResults(payload.results);
 					setIsSearching(false);
 				}
+			} else if (type === "FILTERS") {
+				setAvailableFilters(payload);
 			} else if (type === "ERROR") {
 				console.error("Search worker error:", payload);
 				setIsSearching(false);
@@ -91,5 +96,12 @@ export function useSearchWorker() {
 		pendingQueryRef.current = null;
 	}, []);
 
-	return { search, results, isReady, isSearching, clearResults };
+	return {
+		search,
+		results,
+		isReady,
+		isSearching,
+		clearResults,
+		availableFilters
+	};
 }
